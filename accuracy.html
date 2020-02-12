@@ -54,7 +54,7 @@ async function get_all(key, endpoint) {
     return data;
 }
 
-const STAGES = ['Initiate', 'Apprentice 1', 'Apprentice 2', 'Apprentice 3', 'Apprentice 4', 'Guru 1', 'Guru 2', 'Enlightened', 'Burned'];
+const STAGES = ['Initiate', 'Apprentice 1', 'Apprentice 2', 'Apprentice 3', 'Apprentice 4', 'Guru 1', 'Guru 2', 'Master', 'Enlightened', 'Burned'];
 async function calculate(key) {
     progress.hidden = false;
     const [subjects, reviews] = await Promise.all([
