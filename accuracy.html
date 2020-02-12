@@ -1,0 +1,111 @@
+<html>
+    <meta charset="utf-8">
+    <head>
+        <title>Wanikani review accuracy by SRS stage</title>
+        <h2>Wanikani review accuracy by SRS stage</h2>
+    </head>
+    <body>
+        <form id="key-input-form">
+            <label>Enter your Wanikani APIv2 key:<br>
+                <input id="key-input" type=text
+                    pattern="[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}"
+                    placeholder="01234567-89ab-cdef-0123-456789abcdef" required>
+            </label>
+            <input type=submit value="Calculate">
+        </form>
+
+        <pre id="progress" hidden>Loading data: </pre>
+        <pre id="results"></pre>
+    </body>
+</html>
+
+<script type="text/javascript">
+'use strict';
+const {log, error, trace, assert} = console;
+const progress = document.getElementById('progress');
+
+function append_progress(s) {
+    progress.appendChild(document.createTextNode(s));
+}
+
+
+function query(key, endpoint) {
+    const url = 'https://api.wanikani.com/v2/' + endpoint;
+    console.log(`Fetching ${url}...`);
+    return fetch(url, {
+            headers: new Headers({Authorization: 'Bearer ' + key}),
+            mode: 'cors',
+        }).then(r => r.json());
+}
+
+async function get_all(key, endpoint) {
+    const data = [];
+
+    let res = await query(key, endpoint);
+    append_progress('+');
+    while (res.pages.next_url) {
+        data.push(...res.data);
+
+        const url = res.pages.next_url.split('v2/')[1];
+        res = await query(key, url);
+        append_progress('+');
+    }
+    data.push(...res.data);
+    return data;
+}
+
+const STAGES = ['Initiate', 'Apprentice 1', 'Apprentice 2', 'Apprentice 3', 'Apprentice 4', 'Guru 1', 'Guru 2', 'Enlightened', 'Burned'];
+async function calculate(key) {
+    progress.hidden = false;
+    const [subjects, reviews] = await Promise.all([
+            get_all(key, 'subjects'),
+            get_all(key, 'reviews'),
+        ]);
+    progress.hidden = true;
+
+    const subject_map = new Map;
+    for (const {id, object, data: {characters}} of subjects) {
+        subject_map.set(id, {type: object, characters});
+    }
+
+    const zeros = [0,0,0,0,0,0,0,0,0];
+    const counts = {
+        radical: {num: [...zeros], den: [...zeros]},
+        kanji: {num: [...zeros], den: [...zeros]},
+        vocabulary: {num: [...zeros], den: [...zeros]},
+    };
+
+    for (const {data} of reviews) {
+        const {type} = subject_map.get(data.subject_id);
+        assert(counts[type]);
+
+        const srs = data.starting_srs_stage;
+        const correct = !(data.incorrect_reading_answers + data.incorrect_meaning_answers);
+
+        counts[type].den[srs]++;
+        if (correct) {
+            counts[type].num[srs]++;
+        }
+    }
+
+    const out = document.getElementById('results');
+    for (const [key, {num, den}] of Object.entries(counts)) {
+        out.appendChild(document.createTextNode(`\n${key}:\n`));
+        for (let i = 1; i < num.length; ++i) {
+            if (!num[i]) {break;}
+            const s = `${STAGES[i]}: ${100*num[i]/den[i]}% (${num[i]}/${den[i]})\n`;
+            out.appendChild(document.createTextNode(s));
+        }
+    }
+}
+
+document.getElementById('key-input-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const key = document.getElementById('key-input').value;
+    e.target.hidden = true;
+    e.target.disabled = true;
+
+    calculate(key).catch(alert);
+}, {once: true});
+
+</script>
