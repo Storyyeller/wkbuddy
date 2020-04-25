@@ -150,32 +150,36 @@ async function calculate(key) {
         vocabulary: {num: [...zeros], den: [...zeros]},
     };
 
-    let max_level = 0;
+    let total = 0;
+    let total_correct = 0;
     for (const [id, data] of reviews) {
         const {type, level} = subjects.get(data.subject_id);
         assert(counts[type]);
-        max_level = Math.max(max_level, level);
 
         const srs = data.starting_srs_stage;
         const correct = !(data.incorrect_reading_answers + data.incorrect_meaning_answers);
 
+        total++;
         counts[type].den[0]++;
         counts[type].den[srs]++;
         if (correct) {
+            total_correct++;
             counts[type].num[0]++;
             counts[type].num[srs]++;
         }
     }
 
     const out = document.getElementById('results');
+    const write = s => out.appendChild(document.createTextNode(s));
     for (const [key, {num, den}] of Object.entries(counts)) {
-        out.appendChild(document.createTextNode(`\n${key}:\n`));
+        write(`\n${key}:\n`);
         for (let i = 0; i < num.length; ++i) {
             if (!num[i]) {break;}
-            const s = `${STAGES[i]}: ${100*num[i]/den[i]}% (${num[i]}/${den[i]})\n`;
-            out.appendChild(document.createTextNode(s));
+            write(`${STAGES[i]}: ${100*num[i]/den[i]}% (${num[i]}/${den[i]})\n`);
         }
     }
+    write(`\nOverall accuracy: ${100*total_correct/total}% (${total_correct}/${total})`);
+
 }
 
 document.getElementById('key-input-form').addEventListener('submit', e => {
