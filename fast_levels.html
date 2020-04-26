@@ -1,0 +1,108 @@
+<html>
+    <meta charset="utf-8">
+    <head>
+        <title>Wanikani fast levels report</title>
+        <h2>Wanikani fast levels report</h2>
+    </head>
+    <body>
+        <h3> What is a fast level? </h3>
+        <p> In order to level up in Wanikani, you must guru at least 90% of the kanji for that level.
+            In order to unlock a kanji, you must reach its level <em>and</em> guru all the radicals it depends on.
+            This means that for most levels, you must go through two stages: First guru all the radicals on
+            that level, then guru the kanji on that level that you unlocked after guru'ing those radicals.
+        <p> However, if at most 10% of the kanji on a level depend on radicals from the same level, then
+            there is only one stage required to complete the level. This is because 90+% of the kanji are
+            available immediately on level up, so you do not have to wait to guru that level's radicals first
+            before you can start on the kanji.
+        <p> Which levels are fast levels and which are slow changes occasionally as Wanikani adds, removes, or changes content. To get the most up to date list of fast levels, bookmark this page.
+
+        <form id="key-input-form" hidden>
+            <label>To retrieve the current list of fast levels, please enter your Wanikani APIv2 key:<br>
+                <input id="key-input" type=text
+                    pattern="[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}"
+                    placeholder="01234567-89ab-cdef-0123-456789abcdef" required>
+            </label>
+            <input type=submit value="Calculate">
+        </form>
+        <pre id="progress" hidden>Loading data: </pre>
+        <h3 id="results"></h3>
+    </body>
+</html>
+
+<script type="text/javascript">
+'use strict';
+const {log, error, trace, assert} = console;
+
+function get_api_key() {
+    return new Promise((resolve, reject) => {
+        const saved = localStorage.getItem('api-key');
+        if (saved) {return resolve(saved);}
+
+        const form = document.getElementById('key-input-form');
+        form.hidden = false;
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            const key = document.getElementById('key-input').value;
+            form.hidden = true;
+            form.disabled = true;
+
+            localStorage.setItem('api-key', key);
+            resolve(key);
+        }, {once: true});
+    });
+}
+
+const progress = document.getElementById('progress');
+function append_progress(s) {
+    progress.appendChild(document.createTextNode(s));
+}
+
+const worker = new Worker('worker.js');
+worker.addEventListener('message', e => {
+    log('got message from worker', e.data);
+    switch (e.data[0]) {
+        case 'progress':
+            append_progress('+');
+            break;
+        case 'result':
+            progress.hidden = true;
+            processPage(...e.data[1]);
+            break;
+    }
+});
+get_api_key().then(key => {
+    progress.hidden = false;
+    worker.postMessage([key, ['subjects']]);
+}).catch(e => {
+    error('Caught error', e);
+    progress.textContent = 'Oh dear, an error has occured!';
+    progress.hidden = false;
+});
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+let M = null;
+let DATA = null;
+function processPage(subjects) {
+    M = subjects;
+
+    const kcounts = Array.from(new Array(61), _ => ({fast: 0, total: 0}));
+    for (const {type, hidden_at, level, component_subject_ids} of subjects.values()) {
+        if (hidden_at || type !== 'kanji') {continue;}
+
+        const slow = component_subject_ids.some(id => subjects.get(id).level >= level);
+        kcounts[level].total++;
+        if (!slow) {kcounts[level].fast++;}
+    }
+
+    const fast_levels = [...kcounts.entries()]
+        .filter(([lvl, {fast, total}]) => lvl && fast >= (total * .9))
+        .map(([lvl, _]) => lvl);
+
+    const out = document.getElementById('results');
+    const write = s => out.appendChild(document.createTextNode(s));
+    write(`Currently, the fast levels on Wanikani are: ` + fast_levels.join(', '));
+
+
+    DATA = {kcounts};
+}
+</script>
