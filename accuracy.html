@@ -14,10 +14,35 @@
             <input type=submit value="Calculate">
         </form>
 
+
+        <style type="text/css">
+        #date-filter-options {
+            display: none;
+        }
+        #use-date-filter:checked ~ #date-filter-options {
+            display: block;
+        }
+        </style>
+
+        <input type="checkbox" id="use-date-filter">
+        <label for="use-date-filter">Filter reviews by date</label><br>
+        <div id="date-filter-options">
+            <label><input type="radio" name="date-filter" value="day">Last 24 hours</label>
+            <label><input type="radio" name="date-filter" value="week">Last week</label>
+            <label><input type="radio" name="date-filter" value="twoweek">Last two weeks</label>
+            <label><input type="radio" name="date-filter" value="month">Last month</label>
+            <label><input type="radio" name="date-filter" value="custom">Custom date range
+                <input id="start-date" type=text> to
+                <input id="end-date" type=text>
+            </label>
+        </div>
+
+
         <pre id="progress" hidden>Loading data: </pre>
         <pre id="results"></pre>
     </body>
 </html>
+
 
 <script type="text/javascript">
 'use strict';
@@ -48,6 +73,7 @@ function append_progress(s) {
 }
 
 const worker = new Worker('worker.js');
+let data = null;
 worker.addEventListener('message', e => {
     log('got message from worker', e.data);
     switch (e.data[0]) {
@@ -56,7 +82,8 @@ worker.addEventListener('message', e => {
             break;
         case 'result':
             progress.hidden = true;
-            processPage(...e.data[1]);
+            data = e.data[1];
+            renderResults(...data);
             break;
     }
 });
@@ -70,8 +97,49 @@ get_api_key().then(key => {
 });
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function getDateFilter() {
+    if (!document.getElementById('use-date-filter').checked) {return [null, null]}
+    const start = document.getElementById('start-date').value.trim() || null;
+    const end = document.getElementById('end-date').value.trim() || null;
+    return [start, end];
+}
+let last_filter = [null, null];
+function renderResults(subjects, reviews) {
+    const [start_filter, end_filter] = getDateFilter();
+    processPage(subjects, reviews, start_filter, end_filter);
+    last_filter = [start_filter, end_filter];
+}
+function rerenderResults() {
+    if (!data) {return;}
+    const new_filter = getDateFilter();
+    if (new_filter[0] === last_filter[0] && new_filter[1] === last_filter[1]) {return;}
+    renderResults(...data);
+}
+
+
+const MS_PER_DAY = 1000*60*60*24;
+document.getElementById('date-filter-options').addEventListener('input', ({target}) => {
+    if (target.name === 'date-filter') {
+        if (target.value !== 'custom') {
+            const ms = {
+                day: 1,
+                week: 7,
+                twoweek: 14,
+                month: 31
+            }[target.value] * MS_PER_DAY;
+
+            const date = new Date((new Date).getTime() - ms);
+            document.getElementById('start-date').value = date.toISOString();
+            document.getElementById('end-date').value = '';
+        }
+    }
+    rerenderResults();
+});
+document.getElementById('use-date-filter').addEventListener('input', rerenderResults);
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const STAGES = ['Overall', 'Apprentice 1', 'Apprentice 2', 'Apprentice 3', 'Apprentice 4', 'Guru 1', 'Guru 2', 'Master', 'Enlightened', 'Burned'];
-function processPage(subjects, reviews) {
+function processPage(subjects, reviews, start_filter, end_filter) {
     const zeros = [0,0,0,0,0,0,0,0,0];
     const counts = {
         radical: {num: [...zeros], den: [...zeros]},
@@ -82,6 +150,9 @@ function processPage(subjects, reviews) {
     let total = 0;
     let total_correct = 0;
     for (const [id, data] of reviews) {
+        if (start_filter && data.created_at < start_filter) {continue}
+        if (end_filter && data.created_at >= end_filter) {continue}
+
         const {type, level} = subjects.get(data.subject_id);
         assert(counts[type]);
 
@@ -99,11 +170,17 @@ function processPage(subjects, reviews) {
     }
 
     const out = document.getElementById('results');
+    out.textContent = null;
     const write = s => out.appendChild(document.createTextNode(s));
+    if (start_filter && end_filter) {write(`Showing reviews from ${start_filter} to ${end_filter}\n`)}
+    else if (start_filter) {write(`Showing reviews after ${start_filter}\n`)}
+    else if (end_filter) {write(`Showing reviews before ${end_filter}\n`)}
+
+
     for (const [key, {num, den}] of Object.entries(counts)) {
         write(`\n${key}:\n`);
         for (let i = 0; i < num.length; ++i) {
-            if (!num[i]) {break;}
+            if (!num[i]) {continue}
             write(`${STAGES[i]}: ${100*num[i]/den[i]}% (${num[i]}/${den[i]})\n`);
         }
     }
