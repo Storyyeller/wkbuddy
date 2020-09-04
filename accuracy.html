@@ -180,7 +180,7 @@ function processPage(subjects, reviews, start_filter, end_filter) {
     for (const [key, {num, den}] of Object.entries(counts)) {
         write(`\n${key}:\n`);
         for (let i = 0; i < num.length; ++i) {
-            if (!num[i]) {continue}
+            if (!den[i]) {continue}
             write(`${STAGES[i]}: ${100*num[i]/den[i]}% (${num[i]}/${den[i]})\n`);
         }
     }
