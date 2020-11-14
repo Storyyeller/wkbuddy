@@ -181,10 +181,10 @@ function processPage(subjects, reviews, start_filter, end_filter) {
         write(`\n${key}:\n`);
         for (let i = 0; i < num.length; ++i) {
             if (!den[i]) {continue}
-            write(`${STAGES[i]}: ${100*num[i]/den[i]}% (${num[i]}/${den[i]})\n`);
+            write(`${STAGES[i]}: ${(100*num[i]/den[i]).toFixed(1)}% (${num[i]}/${den[i]})\n`);
         }
     }
-    write(`\nOverall accuracy: ${100*total_correct/total}% (${total_correct}/${total})`);
+    write(`\nOverall accuracy: ${(100*total_correct/total).toFixed(3)}% (${total_correct}/${total})`);
 
 }
 </script>
