@@ -1,0 +1,112 @@
+<html>
+    <meta charset="utf-8">
+    <head>
+        <title>Daily summary</title>
+        <h2>Daily summary</h2>
+    </head>
+    <body>
+        <form id="key-input-form" hidden>
+            <label>Please enter your Wanikani APIv2 key:<br>
+                <input id="key-input" type=text
+                    pattern="[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}"
+                    placeholder="01234567-89ab-cdef-0123-456789abcdef" required>
+            </label>
+            <input type=submit value="Calculate">
+        </form>
+        <pre id="progress" hidden>Loading data: </pre>
+        <pre id="results"></pre>
+    </body>
+</html>
+
+<script type="text/javascript">
+'use strict';
+const {log, error, trace, assert} = console;
+
+function get_api_key() {
+    return new Promise((resolve, reject) => {
+        const saved = localStorage.getItem('api-key');
+        if (saved) {return resolve(saved);}
+
+        const form = document.getElementById('key-input-form');
+        form.hidden = false;
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            const key = document.getElementById('key-input').value;
+            form.hidden = true;
+            form.disabled = true;
+
+            localStorage.setItem('api-key', key);
+            resolve(key);
+        }, {once: true});
+    });
+}
+
+const progress = document.getElementById('progress');
+function append_progress(s) {
+    progress.appendChild(document.createTextNode(s));
+}
+
+const worker = new Worker('worker.js');
+worker.addEventListener('message', e => {
+    log('got message from worker', e.data);
+    switch (e.data[0]) {
+        case 'progress':
+            append_progress('+');
+            break;
+        case 'result':
+            progress.hidden = true;
+            processPage(...e.data[1]);
+            break;
+    }
+});
+get_api_key().then(key => {
+    progress.hidden = false;
+    worker.postMessage([key, ['assignments', 'reviews']]);
+}).catch(e => {
+    error('Caught error', e);
+    progress.textContent = 'Oh dear, an error has occured!';
+    progress.hidden = false;
+});
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+let M = null;
+function processPage(assignments, reviews) {
+    M = {assignments, reviews};
+
+    // Review stats for the last 23 hours
+    const day_agp = new Date((new Date).getTime() - 1000*60*60*23).toISOString();
+
+    let total = 0;
+    let total_correct = 0;
+    for (const [id, data] of reviews) {
+        if (data.created_at < day_agp) {continue}
+        const correct = !(data.incorrect_reading_answers + data.incorrect_meaning_answers);
+
+        total++;
+        if (correct) {
+            total_correct++;
+        }
+    }
+
+
+
+
+    // Bucket counts (apprentice, guru, etc.)
+    const counts = [0,0,0,0,0,0,0,0,0,0];
+    for (const {srs_stage} of assignments.values()) {
+        counts[srs_stage]++;
+    }
+
+    const out = document.getElementById('results');
+    const write = s => out.appendChild(document.createTextNode(s));
+
+    write(`\nReviews in the last day: ${total}`);
+    write(`\nAccuracy: ${(100*total_correct/total).toFixed(2)}% (${total_correct}/${total})`);
+
+    const apprentice = counts[1] + counts[2] + counts[3] + counts[4];
+    const guru = counts[5] + counts[6];
+    write(`\n\nCurrent item counts:`);
+    write(`\nApprentice: ${apprentice}\nGuru: ${guru}\nMaster: ${counts[7]}\nEnlightened: ${counts[8]}\nBurned ${counts[9]}`);
+
+}
+</script>

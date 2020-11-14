@@ -29,11 +29,13 @@ async function query_all(key, endpoint) {
 }
 
 
-const VERSION = 1;
+const VERSION = 2;
 const META_KEY = 'last-updated';
+const TABLES = 'reviews subjects assignments'.split(' ');
 
 function open_db(name) {
     return new Promise((resolve, reject) => {
+        console.log(`opening db ${name} v${VERSION}`);
         const req = indexedDB.open(name, VERSION);
         req.onerror = reject;
         req.onupgradeneeded = e => {
@@ -43,7 +45,7 @@ function open_db(name) {
             for (const name of db.objectStoreNames) {db.deleteObjectStore(name);}
 
             console.log(db.name, db.version, db.objectStoreNames);
-            for (const table of 'reviews subjects'.split(' ')) {
+            for (const table of TABLES) {
                 db.createObjectStore(table, {keyPath: 'id'});
                 db.createObjectStore(table + '-meta');
             }
@@ -55,6 +57,7 @@ function open_db(name) {
             assert(db);
             resolve(db);
         };
+        log('finished setting up db req');
     });
 }
 function idbreq(objs, method, ...args) {
