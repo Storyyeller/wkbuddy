@@ -72,12 +72,20 @@ get_api_key().then(key => {
 let M = null;
 function processPage(assignments, reviews) {
     M = {assignments, reviews};
+    const assigns = [...assignments.values()].filter(a => !a.hidden);
+
+    // Get set of previously burned subjects
+    const prevburned_set = new Set(assigns.filter(r => r.resurrected_at).map(r => r.subject_id));
 
     // Review stats for the last 20 hours
     const day_agp = new Date((new Date).getTime() - 1000*60*60*20).toISOString();
+    const now = new Date().toISOString();
 
     let total = 0;
     let total_correct = 0;
+    let prevburned = 0;
+    let prevburned_correct = 0;
+
     for (const [id, data] of reviews) {
         if (data.created_at < day_agp) {continue}
         const correct = !(data.incorrect_reading_answers + data.incorrect_meaning_answers);
@@ -86,22 +94,35 @@ function processPage(assignments, reviews) {
         if (correct) {
             total_correct++;
         }
+        if (prevburned_set.has(data.subject_id)) {
+            prevburned++;
+            if (correct) {
+                prevburned_correct++;
+            }
+        }
     }
-
-
 
 
     // Bucket counts (apprentice, guru, etc.)
     const counts = [0,0,0,0,0,0,0,0,0,0];
-    for (const {srs_stage} of assignments.values()) {
+    for (const {srs_stage} of assigns) {
         counts[srs_stage]++;
     }
+    const review_count = assigns.filter(a => a.available_at && a.available_at <= now).length;
 
     const out = document.getElementById('results');
     const write = s => out.appendChild(document.createTextNode(s));
 
-    write(`\nReviews in the last day: ${total}`);
-    write(`\nAccuracy: ${(100*total_correct/total).toFixed(2)}% (${total_correct}/${total})`);
+    write(`\nSummary for ${(new Date).toDateString()}:`);
+    write(`\nTime spent: ---`);
+    write(`\nReviews completed: ${total}`);
+    write(`\nReviews remaining: ${review_count}`);
+    if (total) {
+        write(`\nAccuracy: ${(100*total_correct/total).toFixed(2)}% (${total_correct}/${total})`);
+    }
+    if (prevburned) {
+        write(`\nAccuracy on previously burned items: ${(100*prevburned_correct/prevburned).toFixed(2)}% (${total_correct}/${total})`);
+    }
 
     const apprentice = counts[1] + counts[2] + counts[3] + counts[4];
     const guru = counts[5] + counts[6];
