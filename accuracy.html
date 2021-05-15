@@ -44,57 +44,20 @@
 </html>
 
 
+<script src="storage_wrapper.js"></script>
+
 <script type="text/javascript">
 'use strict';
 const {log, error, trace, assert} = console;
 
-function get_api_key() {
-    return new Promise((resolve, reject) => {
-        const saved = localStorage.getItem('api-key');
-        if (saved) {return resolve(saved);}
-
-        const form = document.getElementById('key-input-form');
-        form.hidden = false;
-        form.addEventListener('submit', e => {
-            e.preventDefault();
-            const key = document.getElementById('key-input').value;
-            form.hidden = true;
-            form.disabled = true;
-
-            localStorage.setItem('api-key', key);
-            resolve(key);
-        }, {once: true});
-    });
-}
-
-const progress = document.getElementById('progress');
-function append_progress(s) {
-    progress.appendChild(document.createTextNode(s));
-}
-
-const worker = new Worker('worker.js');
-let data = null;
-worker.addEventListener('message', e => {
-    log('got message from worker', e.data);
-    switch (e.data[0]) {
-        case 'progress':
-            append_progress('+');
-            break;
-        case 'result':
-            progress.hidden = true;
-            data = e.data[1];
-            renderResults(...data);
-            break;
-    }
-});
-get_api_key().then(key => {
-    progress.hidden = false;
-    worker.postMessage([key, ['subjects', 'reviews']]);
-}).catch(e => {
+fetch_data(['subjects', 'reviews']).then(
+    res => renderResults(...res)
+).catch(e => {
     error('Caught error', e);
     progress.textContent = 'Oh dear, an error has occured!';
     progress.hidden = false;
 });
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 function getDateFilter() {

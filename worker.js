@@ -115,8 +115,9 @@ async function get_data(key, tables) {
 
 self.addEventListener('message', e => {
     console.log('worker got', e.data);
-    get_data(...e.data).then(
-        res => self.postMessage(['result', res])
+    const [sig, key, tables] = e.data;
+    get_data(key, tables).then(
+        res => self.postMessage(['result', sig, res])
     ).catch(e => {
         console.log('Error occured in webworker', e);
         console.error(e);
