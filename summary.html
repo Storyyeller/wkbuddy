@@ -80,7 +80,7 @@ function processPage(assignments, reviews) {
     const out = document.getElementById('results');
     const write = s => out.appendChild(document.createTextNode(s));
 
-    write(`\nSummary for ${(new Date).toDateString()}:`);
+    write(`\n${(new Date).toDateString()}:`);
     write(`\nTime spent: ---`);
     write(`\nReviews completed: ${total}`);
     write(`\nReviews remaining: ${review_count}`);
@@ -88,7 +88,7 @@ function processPage(assignments, reviews) {
         write(`\nAccuracy: ${(100*total_correct/total).toFixed(2)}% (${total_correct}/${total})`);
     }
     if (prevburned) {
-        write(`\nAccuracy on previously burned items: ${(100*prevburned_correct/prevburned).toFixed(2)}% (${total_correct}/${total})`);
+        write(`\nAccuracy on previously burned items: ${(100*prevburned_correct/prevburned).toFixed(2)}% (${prevburned_correct}/${prevburned})`);
     }
 
     const apprentice = counts[1] + counts[2] + counts[3] + counts[4];
