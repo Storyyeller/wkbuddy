@@ -88,7 +88,10 @@ function processPage(assignments, reviews) {
         write(`\nAccuracy: ${(100*total_correct/total).toFixed(2)}% (${total_correct}/${total})`);
     }
     if (prevburned) {
-        write(`\nAccuracy on previously burned items: ${(100*prevburned_correct/prevburned).toFixed(2)}% (${prevburned_correct}/${prevburned})`);
+        write(`\nAccuracy on resurrected items: ${(100*prevburned_correct/prevburned).toFixed(2)}% (${prevburned_correct}/${prevburned})`);
+        if (prevburned < total) {
+            write(`\nAccuracy on non-resurrected items: ${(100*(total_correct - prevburned_correct)/(total - prevburned)).toFixed(2)}% (${total_correct - prevburned_correct}/${total - prevburned})`);
+        }
     }
 
     const apprentice = counts[1] + counts[2] + counts[3] + counts[4];
