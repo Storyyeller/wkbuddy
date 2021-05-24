@@ -50,8 +50,12 @@
 'use strict';
 const {log, error, trace, assert} = console;
 
+let data = null;
 fetch_data(['subjects', 'reviews']).then(
-    res => renderResults(...res)
+    res => {
+        data = res;
+        renderResults(...res);
+    }
 ).catch(e => {
     error('Caught error', e);
     progress.textContent = 'Oh dear, an error has occured!';
@@ -109,6 +113,7 @@ function processPage(subjects, reviews, start_filter, end_filter) {
         kanji: {num: [...zeros], den: [...zeros]},
         vocabulary: {num: [...zeros], den: [...zeros]},
     };
+    const level_counts = {num: [0,0,0,0,0,0,0,0,0,0,0,0], den: [0,0,0,0,0,0,0,0,0,0,0,0]};
 
     let total = 0;
     let total_correct = 0;
@@ -122,13 +127,17 @@ function processPage(subjects, reviews, start_filter, end_filter) {
         const srs = data.starting_srs_stage;
         const correct = !(data.incorrect_reading_answers + data.incorrect_meaning_answers);
 
+        const level_bucket = Math.floor((level-1)/5);
+
         total++;
         counts[type].den[0]++;
         counts[type].den[srs]++;
+        level_counts.den[level_bucket]++;
         if (correct) {
             total_correct++;
             counts[type].num[0]++;
             counts[type].num[srs]++;
+            level_counts.num[level_bucket]++;
         }
     }
 
@@ -149,5 +158,15 @@ function processPage(subjects, reviews, start_filter, end_filter) {
     }
     write(`\nOverall accuracy: ${(100*total_correct/total).toFixed(3)}% (${total_correct}/${total})`);
 
+    const {num, den} = level_counts;
+    write(`\n\nProportion of reviews by level:\n`);
+    for (let i = 0; i < num.length; ++i) {
+        write(`${i*5+1}-${i*5+5}: ${(100*den[i]/total).toFixed(1)}%\n`);
+    }
+    write(`\nAccuracy by level:\n`);
+    for (let i = 0; i < num.length; ++i) {
+        if (!den[i]) {continue}
+        write(`${i*5+1}-${i*5+5}: ${(100*num[i]/den[i]).toFixed(1)}% (${num[i]}/${den[i]})\n`);
+    }
 }
 </script>
