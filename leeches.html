@@ -1,0 +1,100 @@
+<html>
+    <meta charset="utf-8">
+    <head>
+        <title>Leech analysis</title>
+        <h2>Leech analysis</h2>
+    </head>
+    <body>
+        <form id="key-input-form" hidden>
+            <label>Please enter your Wanikani APIv2 key:<br>
+                <input id="key-input" type=text
+                    pattern="[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}"
+                    placeholder="01234567-89ab-cdef-0123-456789abcdef" required>
+            </label>
+            <input type=submit value="Calculate">
+        </form>
+        <pre id="progress" hidden>Loading data: </pre>
+        <pre id="results"></pre>
+    </body>
+</html>
+
+<script src="storage_wrapper.js"></script>
+
+
+<script type="text/javascript">
+'use strict';
+const {log, error, trace, assert} = console;
+
+
+fetch_data(['subjects', 'reviews']).then(
+    res => processPage(...res)
+).catch(e => {
+    error('Caught error', e);
+    progress.textContent = 'Oh dear, an error has occured!';
+    progress.hidden = false;
+});
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+let M = null;
+function processPage(subjects, reviews) {
+    // Consider reviews from the last 62 days
+    const two_months_ago_d = new Date((new Date).getTime() - 1000*60*60*24*62);
+    const two_months_ago = two_months_ago_d.toISOString();
+    const now = new Date().toISOString();
+
+    // Review stats for the last 20 hours
+    const counts = new Map;
+
+    for (const [id, data] of reviews) {
+        if (data.created_at < two_months_ago) {continue}
+        const correct = !(data.incorrect_reading_answers + data.incorrect_meaning_answers);
+        const key = data.subject_id;
+
+        let v = counts.get(key) || [0, 0, false];
+        counts.set(key, v);
+
+        if (correct) {
+            v[0]++;
+        } else {
+            v[1]++;
+        }
+        v[2] = correct;
+    }
+
+    let leeches = [];
+    let antileeches = [];
+    for (const [k, v] of counts) {
+        if (v[0] >= 2 && v[2]) {
+            antileeches.push(k);
+        } else if (v[1] >= 2 && !v[2]) {
+            leeches.push(k);
+        }
+    }
+
+    const pairs = [...counts].map(([k, v]) => [k, `${v[0]}/${v[1]}${v[2]?'+':'-'}`]);
+    const keys = pairs.map(p => p[1]).sort();
+    const rev_counts = new Map(keys.map(s => [s, 0]));
+    const rev_counts2 = new Map(keys.map(s => [s, []]));
+    for (const [k, s] of pairs) {
+        rev_counts.set(s, rev_counts.get(s) + 1);
+        rev_counts2.get(s).push(k);
+    }
+    const out = document.getElementById('results');
+    const write = s => out.appendChild(document.createTextNode(s));
+
+    write(`\nShowing leeches for reviews since ${two_months_ago_d.toDateString()}:`);
+    write(`\nLeech count: ${leeches.length}`);
+    write(`\nAntileech count: ${antileeches.length}`);
+    write(`\n\nDetailed counts: (correct/incorrect, + if last review was correct or - if last incorrect)`);
+    for (const [s, n] of rev_counts) {
+        write(`\n${s}: ${n}`);
+    }
+    for (const id of leeches) {
+        const s = subjects.get(id);
+        write(`\n${s.type.slice(0, 5)}\t${s.slug} ${s.meanings[0].meaning} ${s.readings[0].reading}`);
+    }
+
+    M = {leeches, subjects, counts, pairs, keys, rev_counts, rev_counts2};
+}
+</script>
