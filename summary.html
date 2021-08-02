@@ -45,7 +45,7 @@ function processPage(assignments, reviews) {
     const prevburned_set = new Set(assigns.filter(r => r.resurrected_at).map(r => r.subject_id));
 
     // Review stats for the last 20 hours
-    const day_agp = new Date((new Date).getTime() - 1000*60*60*20).toISOString();
+    const day_agp = new Date((new Date).getTime() - 1000*60*60*25).toISOString();
     const now = new Date().toISOString();
 
     let total = 0;
