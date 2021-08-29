@@ -45,8 +45,8 @@ function processPage(assignments, reviews) {
     const prevburned_set = new Set(assigns.filter(r => r.resurrected_at).map(r => r.subject_id));
 
     // Review stats for the last 20 hours
-    const day_agp = new Date((new Date).getTime() - 1000*60*60*25).toISOString();
-    const now = new Date().toISOString();
+    const day_ago = new Date((new Date).getTime() - 1000*60*60*25).toISOString();
+
 
     let total = 0;
     let total_correct = 0;
@@ -54,7 +54,7 @@ function processPage(assignments, reviews) {
     let prevburned_correct = 0;
 
     for (const [id, data] of reviews) {
-        if (data.created_at < day_agp) {continue}
+        if (data.created_at < day_ago) {continue}
         const correct = !(data.incorrect_reading_answers + data.incorrect_meaning_answers);
 
         total++;
@@ -75,7 +75,12 @@ function processPage(assignments, reviews) {
     for (const {srs_stage} of assigns) {
         counts[srs_stage]++;
     }
+
+    const now = new Date().toISOString();
     const review_count = assigns.filter(a => a.available_at && a.available_at <= now).length;
+    const week_from_now = new Date((new Date).getTime() + 1000*60*60*24*7).toISOString();
+    const review_count2 = assigns.filter(a => a.available_at && a.available_at <= week_from_now).length;
+
 
     const out = document.getElementById('results');
     const write = s => out.appendChild(document.createTextNode(s));
@@ -84,6 +89,7 @@ function processPage(assignments, reviews) {
     write(`\nTime spent: ---`);
     write(`\nReviews completed: ${total}`);
     write(`\nReviews remaining: ${review_count}`);
+    write(`\nReviews in next week: ${review_count2} (+${review_count2-review_count})`);
     if (total) {
         write(`\nAccuracy: ${(100*total_correct/total).toFixed(2)}% (${total_correct}/${total})`);
     }
