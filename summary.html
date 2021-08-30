@@ -39,7 +39,9 @@ fetch_data(['assignments', 'reviews']).then(
 let M = null;
 function processPage(assignments, reviews) {
     M = {assignments, reviews};
-    const assigns = [...assignments.values()].filter(a => !a.hidden);
+    const assigns = [...assignments.values()].filter(a => !a.hidden).filter(
+        // temporary hack
+        a => a.subject_id != 466 && a.subject_id != 2516);
 
     // Get set of previously burned subjects
     const prevburned_set = new Set(assigns.filter(r => r.resurrected_at).map(r => r.subject_id));
