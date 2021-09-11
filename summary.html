@@ -41,7 +41,7 @@ function processPage(assignments, reviews) {
     M = {assignments, reviews};
     const assigns = [...assignments.values()].filter(a => !a.hidden).filter(
         // temporary hack
-        a => a.subject_id != 466 && a.subject_id != 2516);
+        a => a.subject_id != 466 && a.subject_id != 2516 && a.subject_id != 4085);
 
     // Get set of previously burned subjects
     const prevburned_set = new Set(assigns.filter(r => r.resurrected_at).map(r => r.subject_id));
