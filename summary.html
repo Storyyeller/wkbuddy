@@ -27,7 +27,7 @@ const {log, error, trace, assert} = console;
 
 
 fetch_data(['assignments', 'reviews']).then(
-    res => processPage(...res)
+    processPage
 ).catch(e => {
     error('Caught error', e);
     progress.textContent = 'Oh dear, an error has occured!';
@@ -37,7 +37,7 @@ fetch_data(['assignments', 'reviews']).then(
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 let M = null;
-function processPage(assignments, reviews) {
+function processPage({assignments, reviews}) {
     M = {assignments, reviews};
     const assigns = [...assignments.values()].filter(a => !a.hidden).filter(
         // temporary hack

@@ -95,7 +95,7 @@ async function get_cached(db, table, fetch_cb) {
         }
     })();
 
-    return new Map([...old_data, ...new_data].map(obj => [obj.id, obj]));
+    return [table, new Map([...old_data, ...new_data].map(obj => [obj.id, obj]))];
 }
 
 async function get_data(key, tables) {
@@ -117,7 +117,7 @@ self.addEventListener('message', e => {
     console.log('worker got', e.data);
     const [sig, key, tables] = e.data;
     get_data(key, tables).then(
-        res => self.postMessage(['result', sig, res])
+        res => self.postMessage(['result', sig, Object.fromEntries(res)])
     ).catch(e => {
         console.log('Error occured in webworker', e);
         console.error(e);

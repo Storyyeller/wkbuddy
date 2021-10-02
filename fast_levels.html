@@ -37,7 +37,7 @@ const {log, error, trace, assert} = console;
 
 
 fetch_data(['subjects']).then(
-    res => processPage(...res)
+    processPage
 ).catch(e => {
     error('Caught error', e);
     progress.textContent = 'Oh dear, an error has occured!';
@@ -48,7 +48,7 @@ fetch_data(['subjects']).then(
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 let M = null;
 let DATA = null;
-function processPage(subjects) {
+function processPage({subjects}) {
     M = subjects;
 
     const kcounts = Array.from(new Array(61), _ => ({fast: 0, total: 0}));

@@ -54,7 +54,7 @@ let data = null;
 fetch_data(['subjects', 'reviews']).then(
     res => {
         data = res;
-        renderResults(...res);
+        renderResults(data);
     }
 ).catch(e => {
     error('Caught error', e);
@@ -71,7 +71,7 @@ function getDateFilter() {
     return [start, end];
 }
 let last_filter = [null, null];
-function renderResults(subjects, reviews) {
+function renderResults({subjects, reviews}) {
     const [start_filter, end_filter] = getDateFilter();
     processPage(subjects, reviews, start_filter, end_filter);
     last_filter = [start_filter, end_filter];
@@ -80,7 +80,7 @@ function rerenderResults() {
     if (!data) {return;}
     const new_filter = getDateFilter();
     if (new_filter[0] === last_filter[0] && new_filter[1] === last_filter[1]) {return;}
-    renderResults(...data);
+    renderResults(data);
 }
 
 

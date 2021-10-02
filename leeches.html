@@ -27,7 +27,7 @@ const {log, error, trace, assert} = console;
 
 
 fetch_data(['subjects', 'reviews']).then(
-    res => processPage(...res)
+    processPage
 ).catch(e => {
     error('Caught error', e);
     progress.textContent = 'Oh dear, an error has occured!';
@@ -37,7 +37,7 @@ fetch_data(['subjects', 'reviews']).then(
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 let M = null;
-function processPage(subjects, reviews) {
+function processPage({subjects, reviews}) {
     // Consider reviews from the last 62 days
     const two_months_ago_d = new Date((new Date).getTime() - 1000*60*60*24*62);
     const two_months_ago = two_months_ago_d.toISOString();
