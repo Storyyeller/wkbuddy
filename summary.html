@@ -26,7 +26,7 @@
 const {log, error, trace, assert} = console;
 
 
-fetch_data(['assignments', 'reviews']).then(
+fetch_data(['assignments', 'reviews', 'subjects']).then(
     processPage
 ).catch(e => {
     error('Caught error', e);
@@ -37,16 +37,14 @@ fetch_data(['assignments', 'reviews']).then(
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 let M = null;
-function processPage({assignments, reviews}) {
+function processPage({assignments, reviews, subjects}) {
     M = {assignments, reviews};
-    const assigns = [...assignments.values()].filter(a => !a.hidden).filter(
-        // temporary hack
-        a => a.subject_id != 466 && a.subject_id != 2516 && a.subject_id != 4085);
+    const assigns = [...assignments.values()].filter(a => !a.hidden && subjects.get(a.subject_id).level <= 46);
 
     // Get set of previously burned subjects
     const prevburned_set = new Set(assigns.filter(r => r.resurrected_at).map(r => r.subject_id));
 
-    // Review stats for the last 20 hours
+    // Review stats for the last 25 hours
     const day_ago = new Date((new Date).getTime() - 1000*60*60*25).toISOString();
 
 
@@ -82,7 +80,8 @@ function processPage({assignments, reviews}) {
     const review_count = assigns.filter(a => a.available_at && a.available_at <= now).length;
     const week_from_now = new Date((new Date).getTime() + 1000*60*60*24*7).toISOString();
     const review_count2 = assigns.filter(a => a.available_at && a.available_at <= week_from_now).length;
-
+    const month_from_now = new Date((new Date).getTime() + 1000*60*60*24*30).toISOString();
+    const review_count3 = assigns.filter(a => a.available_at && a.available_at <= month_from_now).length;
 
     const out = document.getElementById('results');
     const write = s => out.appendChild(document.createTextNode(s));
@@ -92,6 +91,7 @@ function processPage({assignments, reviews}) {
     write(`\nReviews completed: ${total}`);
     write(`\nReviews remaining: ${review_count}`);
     write(`\nReviews in next week: ${review_count2} (+${review_count2-review_count})`);
+    write(`\nReviews in next month: ${review_count3} (+${review_count3-review_count2})`);
     if (total) {
         write(`\nAccuracy: ${(100*total_correct/total).toFixed(2)}% (${total_correct}/${total})`);
     }
