@@ -92,7 +92,7 @@ function processPage({subjects, reviews}) {
     }
     for (const id of leeches) {
         const s = subjects.get(id);
-        write(`\n${s.type.slice(0, 5)}\t${s.slug} ${s.meanings[0].meaning} ${s.readings[0].reading}`);
+        write(`\n${s.type.slice(0, 5)}\t${s.slug} ${s.meanings[0].meaning} ${s.readings?.[0]?.reading}`);
     }
 
     M = {leeches, subjects, counts, pairs, keys, rev_counts, rev_counts2};
