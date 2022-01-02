@@ -38,6 +38,7 @@ fetch_data(['assignments', 'reviews', 'subjects']).then(
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 let M = null;
 function processPage({assignments, reviews, subjects}) {
+    const t1 = elapsed();
     M = {assignments, reviews};
     const assigns = [...assignments.values()].filter(a => !a.hidden && subjects.get(a.subject_id).level <= 46);
 
@@ -106,6 +107,7 @@ function processPage({assignments, reviews, subjects}) {
     const guru = counts[5] + counts[6];
     write(`\n\nCurrent item counts:`);
     write(`\nApprentice: ${apprentice}\nGuru: ${guru}\nMaster: ${counts[7]}\nEnlightened: ${counts[8]}\nBurned ${counts[9]}`);
+    console.log(`processPage ${t1} ${elapsed() - t1}`);
 
 }
 </script>

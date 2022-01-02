@@ -1,7 +1,10 @@
 'use strict';
 const {log, error, trace, assert} = console;
 
-function display_progress() {self.postMessage(['progress']);}
+let t0 = performance.now();
+function elapsed() {return Math.round(performance.now() - t0);}
+
+function display_progress(debug_msg) {self.postMessage(['progress', elapsed(), debug_msg]);}
 
 function query(key, endpoint) {
     const url = 'https://api.wanikani.com/v2/' + endpoint;
@@ -16,13 +19,13 @@ async function query_all(key, endpoint) {
     const data = [];
 
     let res = await query(key, endpoint);
-    display_progress();
+    display_progress(endpoint);
     while (res.pages.next_url) {
         data.push(...res.data);
 
         const url = res.pages.next_url.split('v2/')[1];
         res = await query(key, url);
-        display_progress();
+        display_progress(url);
     }
     data.push(...res.data);
     return data;
@@ -72,7 +75,7 @@ async function get_cached(db, table, fetch_cb) {
     const meta_name = table + '-meta';
     const new_time = (new Date).toISOString();
 
-
+    const read_start = elapsed();
     const [old_data, last_time] = await (() => {
         const t = db.transaction([main_name, meta_name], 'readonly');
         return Promise.all([
@@ -80,8 +83,10 @@ async function get_cached(db, table, fetch_cb) {
             idbreq(t.objectStore(meta_name), 'get', META_KEY),
         ]);
     })();
+    const read_end = elapsed();
 
     const new_data = await fetch_cb(last_time);
+    const fetch_end = elapsed();
 
     (async () => {
         const t = db.transaction([main_name, meta_name], 'readwrite');
@@ -95,7 +100,10 @@ async function get_cached(db, table, fetch_cb) {
         }
     })();
 
-    return [table, new Map([...old_data, ...new_data].map(obj => [obj.id, obj]))];
+    const data = new Map([...old_data, ...new_data].map(obj => [obj.id, obj]));
+    const debug_msg = `${table}: read_start ${read_start} read_end ${read_end} fetch_end ${fetch_end}`;
+    display_progress(debug_msg);
+    return [table, data];
 }
 
 async function get_data(key, tables) {
@@ -116,8 +124,9 @@ async function get_data(key, tables) {
 self.addEventListener('message', e => {
     console.log('worker got', e.data);
     const [sig, key, tables] = e.data;
+    t0 = performance.now();
     get_data(key, tables).then(
-        res => self.postMessage(['result', sig, Object.fromEntries(res)])
+        res => self.postMessage(['result', sig, Object.fromEntries(res), elapsed()])
     ).catch(e => {
         console.log('Error occured in webworker', e);
         console.error(e);

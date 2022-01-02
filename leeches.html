@@ -38,6 +38,8 @@ fetch_data(['subjects', 'reviews']).then(
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 let M = null;
 function processPage({subjects, reviews}) {
+    const t1 = elapsed();
+
     // Consider reviews from the last 62 days
     const two_months_ago_d = new Date((new Date).getTime() - 1000*60*60*24*62);
     const two_months_ago = two_months_ago_d.toISOString();
@@ -95,6 +97,7 @@ function processPage({subjects, reviews}) {
         write(`\n${s.type.slice(0, 5)}\t${s.slug} ${s.meanings[0].meaning} ${s.readings?.[0]?.reading}`);
     }
 
+    console.log(`processPage ${t1} ${elapsed() - t1}`);
     M = {leeches, subjects, counts, pairs, keys, rev_counts, rev_counts2};
 }
 </script>
