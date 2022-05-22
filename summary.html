@@ -26,7 +26,7 @@
 const {log, error, trace, assert} = console;
 
 
-fetch_data(['assignments', 'reviews', 'subjects']).then(
+fetch_data(['assignments', 'reviews']).then(
     processPage
 ).catch(e => {
     error('Caught error', e);
@@ -40,10 +40,10 @@ const prevburned_set = new Set([453,457,452,448,441,445,440,449,455,454,456,444,
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 let M = null;
-function processPage({assignments, reviews, subjects}) {
+function processPage({assignments, reviews}) {
     const t1 = elapsed();
-    M = {assignments, reviews, subjects};
-    const assigns = [...assignments.values()].filter(a => !a.hidden && subjects.get(a.subject_id).level <= 46);
+    M = {assignments, reviews};
+    const assigns = [...assignments.values()].filter(a => !a.hidden);
 
     // Review stats for the last 25 hours
     const day_ago = new Date((new Date).getTime() - 1000*60*60*25).toISOString();
