@@ -105,10 +105,15 @@ async function get_cached(db, table, fetch_cb) {
     display_progress(debug_msg);
     return [table, data];
 }
+async function get_user(key) {
+    return ['user', (await query(key, 'user')).data];
+}
 
 async function get_data(key, tables) {
     const db = await open_db(key);
-    return Promise.all(tables.map(table => get_cached(db, table,
+    return Promise.all(tables.map(table =>
+        table === 'user' ? get_user(key) :
+        get_cached(db, table,
         async function(last_time) {
             const new_data_raw = await query_all(key, table + (last_time ? '?updated_after=' + last_time : ''));
             return new_data_raw.map(({id, object, data}) => {
