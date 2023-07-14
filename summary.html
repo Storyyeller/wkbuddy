@@ -25,6 +25,16 @@
 'use strict';
 const {log, error, trace, assert} = console;
 
+// Temp hack
+function query(key, endpoint) {
+    const url = 'https://api.wanikani.com/v2/' + endpoint;
+    console.log(`Fetching ${url}...`);
+    return fetch(url, {
+            headers: new Headers({Authorization: 'Bearer ' + key}),
+            mode: 'cors',
+        }).then(r => r.json());
+}
+
 
 fetch_data(['assignments', 'user']).then(
     processPage
@@ -36,7 +46,7 @@ fetch_data(['assignments', 'user']).then(
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 let M = null;
-function processPage({assignments, user}) {
+async function processPage({assignments, user}) {
     const t1 = elapsed();
     M = {assignments, user};
     const assigns = [...assignments.values()].filter(a => !a.hidden);
@@ -58,6 +68,9 @@ function processPage({assignments, user}) {
     //     }
     // }
 
+    const key = await get_api_key();
+    const estimated_reviews = (await query(key, `assignments?updated_after=${day_ago}`)).total_count;
+
 
     // Bucket counts (apprentice, guru, etc.)
     const counts = [0,0,0,0,0,0,0,0,0,0];
@@ -77,7 +90,7 @@ function processPage({assignments, user}) {
 
     write(`\n${(new Date).toDateString()}:`);
     write(`\nTime spent: 15m`);
-    write(`\nReviews completed: 100`);
+    write(`\nReviews completed: ${estimated_reviews}`);
     write(`\nReviews remaining: ${review_count}`);
     write(`\nReviews in next week: ${review_count2} (+${review_count2-review_count})`);
     write(`\nReviews in next month: ${review_count3} (+${review_count3-review_count2})`);
