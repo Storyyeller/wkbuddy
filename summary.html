@@ -90,7 +90,7 @@ async function processPage({assignments, user}) {
 
     write(`\n${(new Date).toDateString()}:`);
     write(`\nTime spent: 15m`);
-    write(`\nReviews completed: ${estimated_reviews}`);
+    write(`\nReviews completed: 100`);
     write(`\nReviews remaining: ${review_count}`);
     write(`\nReviews in next week: ${review_count2} (+${review_count2-review_count})`);
     write(`\nReviews in next month: ${review_count3} (+${review_count3-review_count2})`);
@@ -104,6 +104,7 @@ async function processPage({assignments, user}) {
     write(`\n\nCurrent item counts:`);
     write(`\nApprentice: ${apprentice}\nGuru: ${guru}\nMaster: ${counts[7]}\nEnlightened: ${counts[8]}\nBurned: ${counts[9]}`);
 
+    write(`\nEstimated reviews: ${estimated_reviews}`);
     console.log(`processPage ${t1} ${elapsed() - t1}`);
 
 }
